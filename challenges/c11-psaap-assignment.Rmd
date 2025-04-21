@@ -1,7 +1,7 @@
 ---
 title: "Regression Case Study: PSAAP II"
-author: "(Your name here)"
-date: 2020-
+author: "Esther Aduamah"
+date: 2025-04-20
 output:
   github_document:
     toc: true
@@ -10,17 +10,20 @@ output:
 *Purpose*: Confidence and prediction intervals are useful for studying "pure sampling" of some distribution. However, we can combine CI and PI with regression analysis to equip our modeling efforts with powerful notions of uncertainty. In this challenge, you will use fluid simulation data in a regression analysis with uncertainty quantification (CI and PI) to support engineering design.
 
 <!-- include-rubric -->
+
 # Grading Rubric
+
 <!-- -------------------------------------------------- -->
 
 Unlike exercises, **challenges will be graded**. The following rubrics define how you will be graded, both on an individual and team basis.
 
 ## Individual
+
 <!-- ------------------------- -->
 
 | Category | Needs Improvement | Satisfactory |
-|----------|----------------|--------------|
-| Effort | Some task __q__'s left unattempted | All task __q__'s attempted |
+|-------------------|-----------------------------|-------------------------|
+| Effort | Some task **q**'s left unattempted | All task **q**'s attempted |
 | Observed | Did not document observations, or observations incorrect | Documented correct observations based on analysis |
 | Supported | Some observations not clearly supported by analysis | All observations clearly supported by analysis (table, graph, etc.) |
 | Assessed | Observations include claims not supported by the data, or reflect a level of certainty not warranted by the data | Observations are appropriately qualified by the quality & relevance of the data and (in)conclusiveness of the support |
@@ -28,10 +31,10 @@ Unlike exercises, **challenges will be graded**. The following rubrics define ho
 | Code Styled | Violations of the [style guide](https://style.tidyverse.org/) hinder readability | Code sufficiently close to the [style guide](https://style.tidyverse.org/) |
 
 ## Submission
+
 <!-- ------------------------- -->
 
 Make sure to commit both the challenge report (`report.md` file) and supporting files (`report_files/` folder) when you are done! Then submit a link to Canvas. **Your Challenge submission is not complete without all files uploaded to GitHub.**
-
 
 ```{r setup}
 library(tidyverse)
@@ -65,18 +68,23 @@ unzip(filename_zip, exdir = "./data")
 df_psaap <- read_csv(filename_psaap)
 ```
 
-![PSAAP II irradiated core flow](./images/psaap-setup.png)
-Figure 1. An example simulation, frozen at a specific point in time. An initial simulation is run (HIT SECTION) to generate a turbulent flow with particles, and that swirling flow is released into a rectangular domain (RADIATED SECTION) with bulk downstream flow (left to right). Concentrated solar radiation transmits through the optically transparent fluid, but deposits heat into the particles. The particles then convect heat into the fluid, which heats up the flow. The false-color image shows the fluid temperature: Notice that there are "hot spots" where hot particles have deposited heat into the fluid. The dataset `df_psaap` gives measurements of `T_norm = (T - T0) / T0` averaged across planes at various locations along the RADIATED SECTION.
+![PSAAP II irradiated core flow](./images/psaap-setup.png)Figure 1. An example simulation, frozen at a specific point in time. An initial simulation is run (HIT SECTION) to generate a turbulent flow with particles, and that swirling flow is released into a rectangular domain (RADIATED SECTION) with bulk downstream flow (left to right). Concentrated solar radiation transmits through the optically transparent fluid, but deposits heat into the particles. The particles then convect heat into the fluid, which heats up the flow. The false-color image shows the fluid temperature: Notice that there are "hot spots" where hot particles have deposited heat into the fluid. The dataset `df_psaap` gives measurements of `T_norm = (T - T0) / T0` averaged across planes at various locations along the RADIATED SECTION.
 
-### __q1__ Perform your "initial checks" to get a sense of the data.
+### **q1** Perform your "initial checks" to get a sense of the data.
 
 ```{r q1-task}
 ## TODO: Perform your initial checks
+
+df_psaap %>%  
+  glimpse()  
+
+df_psaap %>%  
+  summary()  
 ```
 
 **Observations**:
 
-- (Take notes here!)
+-   It has 140 rows (which I think means 140 different simulation runs) and 22 columns showing different measurements. I can see there are input settings like channel size and flow speed, and output measurements like temperature changes. The measurements were taken at specific spots along the channel (x values like 0.25, 0.5, etc.). Most temperature changes are in the middle range (median around 63%), but there are some really high ones that pull the average up to 74%. I think this means most cases behave normally but some get unusually hot.
 
 The important variables in this dataset are:
 
@@ -107,12 +115,22 @@ The important variables in this dataset are:
 
 The primary output of interest is `T_norm = (avg_T - T_f) / T_f`, the normalized (dimensionless) temperature rise of the fluid, due to heat transfer. These measurements are taken at locations `x` along a column of fluid, for different experimental settings (e.g. different dimensions `W, L`, different flow speeds `U_0`, etc.).
 
-### __q2__ Visualize `T_norm` against `x`. Note that there are multiple simulations at different values of the Input variables: Each simulation result is identified by a different value of `idx`.
+### **q2** Visualize `T_norm` against `x`. Note that there are multiple simulations at different values of the Input variables: Each simulation result is identified by a different value of `idx`.
 
 ```{r q2-task}
 ## TODO: Visualize the data in df_psaap with T_norm against x;
 ##       design your visual to handle the multiple simulations,
 ##       each identified by different values of idx
+
+df_psaap %>%  
+  ggplot(aes(x = x, y = T_norm, group = idx)) +  
+  geom_line(alpha = 0.3) +  
+  labs(  
+    title = "Normalized Temperature Rise Along Channel",  
+    x = "Channel Location (x)",  
+    y = "Normalized Temperature Rise (T_norm)"  
+  ) +  
+  theme_minimal()  
 ```
 
 ## Modeling
@@ -131,7 +149,7 @@ One of the key decisions we must make in modeling is choosing predictors (featur
 
 Reasoning about our variables---at least at a *high level*---can help us to avoid including *fallacious* predictors in our models. You'll explore this idea in the next task.
 
-### __q3__ The following code chunk fits a few different models. Compute a measure of model accuracy for each model on `df_validate`, and compare their performance.
+### **q3** The following code chunk fits a few different models. Compute a measure of model accuracy for each model on `df_validate`, and compare their performance.
 
 ```{r q3-task}
 ## NOTE: No need to edit these models
@@ -149,20 +167,32 @@ fit_nonphysical <-
 
 ## TODO: Compute a measure of accuracy for each fit above;
 ##       compare their relative performance
+
+model_comparison <- tibble(
+  Model = c("Cheat (avg_T)", "Baseline (x only)", "Nonphysical (idx)"),
+  RMSE = c(
+    sqrt(mean((predict(fit_cheat, df_validate) - df_validate$T_norm)^2)),
+    sqrt(mean((predict(fit_baseline, df_validate) - df_validate$T_norm)^2)),
+    sqrt(mean((predict(fit_nonphysical, df_validate) - df_validate$T_norm)^2))
+  )
+)
+
+model_comparison %>% 
+  arrange(RMSE)
 ```
 
 **Observations**:
 
-- Which model is *most accurate*? Which is *least accurate*?
-  - (Your response here)
-- What *Category* of variable is `avg_T`? Why is it such an effective predictor?
-  - (Your response here)
-- Would we have access to `avg_T` if we were trying to predict a *new* value of `T_norm`? Is `avg_T` a valid predictor?
-  - (Your response here)
-- What *Category* of variable is `idx`? Does it have any physical meaning?
-  - (Your response here)
+-   Which model is *most accurate*? Which is *least accurate*?
+    -   The "cheat" model using avg_T is most accurate (RMSE = 0.232), while the model using only idx is least accurate (RMSE = 0.399). The baseline model with just x falls in between (RMSE = 0.284).
+-   What *Category* of variable is `avg_T`? Why is it such an effective predictor?
+    -   avg_T is an Output variable (the measured average temperature). It's super effective because T_norm is mathematically derived from it (T_norm = (avg_T - T_f)/T_f), creating a perfect circular relationship that wouldn't exist with real-world prediction tasks.
+-   Would we have access to `avg_T` if we were trying to predict a *new* value of `T_norm`? Is `avg_T` a valid predictor?
+    -   No - we wouldn't have avg_T when trying to predict new T_norm values. While it technically works mathematically, it's not a valid predictor because: it requires knowing the answer to predict the answer, creates data leakage, defeats the purpose of prediction.
+-   What *Category* of variable is `idx`? Does it have any physical meaning?
+    -   idx is a Metadata variable - just a simulation ID number. It has zero physical meaning regarding the fluid dynamics; it's simply an arbitrary counter tracking which simulation run produced the data. Using it as a predictor is meaningless since simulation #5 isn't inherently different from #4 in terms of the physics.
 
-### __q4__ Interpret this model
+### **q4** Interpret this model
 
 Interpret the following model by answering the questions below.
 
@@ -170,27 +200,45 @@ Interpret the following model by answering the questions below.
 
 ```{r q4-task}
 ## TODO: Inspect the regression coefficients for the following model
-fit_q4 <- 
-  df_train %>% 
-  # lm(formula = T_norm ~ . - idx - avg_q - avg_T - rms_T)
-  lm(formula = T_norm ~ L + W + U_0 + N_p + k_f + T_f)
-  # lm(formula = T_norm ~ L - W - U_0 - N_p - k_f - T_f)
+fit_q4 <- df_train %>%
+  lm(T_norm ~ L + W + U_0 + N_p + k_f + T_f, data = .)
+
+fit_q4 %>%
+  broom::tidy() %>%
+  arrange(desc(estimate))
+
+df_psaap %>%
+  summarise(
+    sd_x   = sd(x),
+    sd_T_f = sd(T_f)
+  ) 
 ```
 
 **Observations**:
 
-- Which columns are excluded in the model formula above? What categories do these belong to? Why are these important quantities to leave out of the model?
-  - (Your response here)
-- Which inputs are *statistically significant*, according to the model?
-  - (Your response here)
-- What is the regression coefficient for `x`? What about the regression coefficient for `T_f`?
-  - (Your response here)
-- What is the standard deviation of `x` in `df_psaap`? What about the standard deviation of `T_f`? 
-  - (Your response here)
-- How do these standard deviations relate to the regression coefficients for `x` and `T_f`?
-  - (Your response here)
-- Note that literally *all* of the inputs above have *some* effect on the output `T_norm`; so they are all "significant" in that sense. What does this tell us about the limitations of statistical significance for interpreting regression coefficients?
-  - (Your response here)
+-   Which columns are excluded in the model formula above? What categories do these belong to? Why are these important quantities to leave out of the model?
+    -   The model excludes: Metadata variables (idx) - Just simulation IDs with no physical meaning, output measurements (avg_q, avg_t, rms_T), and many physical inputs.
+-   Which inputs are *statistically significant*, according to the model?
+    -   At the traditional p \< 0.05 level:
+        -   Definitely significant: W (width, p \< 0.0001) and T_f (inlet temp, p \< 0.0001)
+
+        -   Borderline significant: N_p (particle count, p = 0.0515)
+
+        -   Not significant: L, U_0, k_f (all p \> 0.05)
+-   What is the regression coefficient for `x`? What about the regression coefficient for `T_f`?
+    -   X isn't actually in this model, which seems odd. T_f has a negative relationship.
+-   What is the standard deviation of `x` in `df_psaap`? What about the standard deviation of `T_f`?
+    -   x: sd = 0.2805 (relatively small variation)
+    -   T_f: sd = 38.94 (much larger variation)
+-   How do these standard deviations relate to the regression coefficients for `x` and `T_f`?
+    -   The larger standard deviation for T_f helps explain why its coefficient is smaller - a 1-unit change represents a much smaller relative change for T_f than for x. This shows why we can't directly compare raw coefficients to judge importance.
+-   Note that literally *all* of the inputs above have *some* effect on the output `T_norm`; so they are all "significant" in that sense. What does this tell us about the limitations of statistical significance for interpreting regression coefficients?
+    -   This shows that statistical significance (p-values) depends heavily on:
+        1.  Sample size - with enough data, tiny effects become "significant"
+
+        2.  Measurement precision - variables with smaller variation appear more significant
+
+        3.  Model specification - what other variables are included
 
 ## Contrasting CI and PI
 
@@ -251,14 +299,14 @@ Under the `ci` facet we have the regression confidence intervals and the mean tr
 
 **Punchline**:
 
-- Confidence intervals are meant to capture the *mean trend*
-- Prediction intervals are meant to capture *new observations*
+-   Confidence intervals are meant to capture the *mean trend*
+-   Prediction intervals are meant to capture *new observations*
 
 Both CI and PI are a quantification of the uncertainty in our model, but the two intervals designed to answer different questions.
 
 Since CI and PI are a quantification of uncertainty, they should tend to *narrow* as our model becomes more confident in its predictions. Building a more accurate model will often lead to a reduction in uncertainty. We'll see this phenomenon in action with the following task:
 
-### __q5__ The following code will construct a predicted-vs-actual plot with your model from *q4* and add prediction intervals. Study the results and answer the questions below under *observations*.
+### **q5** The following code will construct a predicted-vs-actual plot with your model from *q4* and add prediction intervals. Study the results and answer the questions below under *observations*.
 
 ```{r q5-task}
 ## TODO: Run this code and interpret the results
@@ -297,12 +345,12 @@ bind_rows(
 
 **Observations**:
 
-- Which model tends to be more accurate? How can you tell from this predicted-vs-actual plot?
-  - (Your response here)
-- Which model tends to be *more confident* in its predictions? Put differently, which model has *narrower prediction intervals*?
-  - (Your response here)
-- How many predictors does the `fit_simple` model need in order to make a prediction? What about your model `fit_q4`?
-  - (Your response here)
+-   Which model tends to be more accurate? How can you tell from this predicted-vs-actual plot?
+    -   The plot compares two models - the simple "x only" model and the more complex "q4" model. The q4 model appears more accurate because of its predicted values are much more clustered tightly around the diagonal reference line.
+-   Which model tends to be *more confident* in its predictions? Put differently, which model has *narrower prediction intervals*?
+    -   The q4 model shows narrower prediction intervals (tighter error bars) compared to the x-only model. The increased confidence comes from incorporating additional meaningful predictors that reduce uncertainty in the predictions. The simple x-only model has wider intervals because it's working with less information.
+-   How many predictors does the `fit_simple` model need in order to make a prediction? What about your model `fit_q4`?
+    -   The fit_simple ("x only") model requires just 1 predictor (x) to make predictions. In contrast, the fit_q4 model needs multiple predictors - from the previous question we know it uses L, W, U_0, N_p, k_f, and T_f (6 predictors total). While the more complex model requires more input information, the plot shows this pays off in both better accuracy and greater confidence in predictions.
 
 Based on these results, you might be tempted to always throw every reasonable variable into the model. For some cases, that might be the best choice. However, some variables might be *outside our control*; for example, variables involving human behavior cannot be fully under our control. Other variables may be *too difficult to measure*; for example, it is *in theory* possible to predict the strength of a component by having detailed knowledge of its microstructure. However, it is *patently infeasible* to do a detailed study of *every single component* that gets used in an airplane.
 
@@ -310,7 +358,7 @@ In both cases---human behavior and variable material properties---we would be be
 
 # Case Study: Predicting Performance Ranges
 
-### __q6__ You are consulting with a team that is designing a prototype heat transfer device. They are asking you to help determine a *dependable range of values* for `T_norm` they can design around for this *single prototype*. The realized value of `T_norm` must not be too high as it may damage the downstream equipment, but it must also be high enough to extract an acceptable amount of heat.
+### **q6** You are consulting with a team that is designing a prototype heat transfer device. They are asking you to help determine a *dependable range of values* for `T_norm` they can design around for this *single prototype*. The realized value of `T_norm` must not be too high as it may damage the downstream equipment, but it must also be high enough to extract an acceptable amount of heat.
 
 In order to maximize the conditions under which this device can operate successfully, the design team has chosen to fix the variables listed in the table below, and consider the other variables to fluctuate according to the values observed in `df_psaap`.
 
@@ -337,25 +385,51 @@ pr_level <- 0.8
 #        use the validation data to check your uncertainty estimates, and 
 #        make a recommendation on a *dependable range* of values for T_norm
 #        at the point `df_design`
-fit_q6 <- NA
+# Fit model with design-relevant variables  
 
+fit_q6_fixed <- df_train %>%
+  lm(T_norm ~ x + L + W + U_0, data = .)
+
+df_validate_pred <- df_validate %>%
+  add_uncertainties(
+    fit_q6_fixed,
+    interval = "prediction",
+    level    = pr_level,
+    prefix   = "pi"
+  )
+
+coverage <- mean(
+  df_validate_pred$T_norm >= df_validate_pred$pi_lwr &
+  df_validate_pred$T_norm <= df_validate_pred$pi_upr
+)
+print(glue::glue("Validation coverage: {round(coverage, 3)}"))
+
+design_pred <- df_design %>%
+  add_uncertainties(
+    fit_q6_fixed,
+    interval = "prediction",
+    level    = pr_level,
+    prefix   = "pi"
+  )
+
+design_pred
 ```
 
 **Recommendation**:
 
-- How much do you trust your model? Why?
-  - (Your response here)
-- What kind of interval---confidence or prediction---would you use for this task, and why?
-  - (Your response here)
-- What fraction of validation cases lie within the intervals you predict? (NB. Make sure to calculate your intervals *based on the validation data*; don't just use one single interval!) How does this compare with `pr_level`?
-  - (Your response here)
-- What interval for `T_norm` would you recommend the design team to plan around?
-  - (Your response here)
-- Are there any other recommendations you would provide?
-  - (Your response here)
+-   How much do you trust your model? Why?
+    -   I think the mode is okay. I found that 93.3% of actual T_norm values fell inside your 80% Pls, so the model is capturing variability– and even errs on the side of being slightly conservative.
+-   What kind of interval---confidence or prediction---would you use for this task, and why?
+    -   Prediction intervals; the team wants a range that an individual *future* prototype is likely to exhibit, not an interval for the *mean* T_norm.
+-   What fraction of validation cases lie within the intervals you predict? (NB. Make sure to calculate your intervals *based on the validation data*; don't just use one single interval!) How does this compare with `pr_level`?
+    -   observed coverage: 0.933; target: 0.8
+-   What interval for `T_norm` would you recommend the design team to plan around?
+    -   (Your response here)
+-   Are there any other recommendations you would provide?
+    -   N/A
 
 *Bonus*: One way you could take this analysis further is to recommend which other variables the design team should tightly control. You could do this by fixing values in `df_design` and adding them to the model. An exercise you could carry out would be to systematically test the variables to see which ones the design team should more tightly control.
 
 # References
 
-- [1] Jofre, del Rosario, and Iaccarino "Data-driven dimensional analysis of heat transfer in irradiated particle-laden turbulent flow" (2020) *International Journal of Multiphase Flow*, https://doi.org/10.1016/j.ijmultiphaseflow.2019.103198
+-   [1] Jofre, del Rosario, and Iaccarino "Data-driven dimensional analysis of heat transfer in irradiated particle-laden turbulent flow" (2020) *International Journal of Multiphase Flow*, <https://doi.org/10.1016/j.ijmultiphaseflow.2019.103198>
