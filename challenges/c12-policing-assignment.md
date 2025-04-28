@@ -560,12 +560,23 @@ fit_q8 %>% tidy()
 
 - How does controlling for found contraband affect the `subject_race`
   terms in the model?
-  - (Your response here)
+  - Once you add `contraband_found` to the regression, the race
+    coefficients shrink in magnitude. In other words, the log-odds
+    differences for Black vs. White and Hispanic vs. White both
+    decrease, which means that part of the unadjusted racial disparity
+    in arrest rates is explained by differing rates of contraband
+    discovery across races.
 - What does the *finding of contraband* tell us about the stop? What
   does it *not* tell us about the stop?
-  - It tells us that the officer discovered illegal items or substances
-    during the stop– a direct, legal basis for making an arrest.
-  - It doesn’t say why the driver was stopped in the first place and
+  - Discovering contraband is a strong, direct predictor of an arrest
+    (the `contraband_foundTRUE` coefficient is large and highly
+    significant), reflecting that illegal items almost inevitably lead
+    to charges.
+
+  - However, it does *not* tell us *why* the vehicle was stopped (e.g.,
+    traffic violation, equipment issue, officer discretion) nor does it
+    capture any pre-stop decisions or potential bias in who gets
+    searched.
 
 ### **q9** Go deeper: Pose at least one more question about the data and fit at least one more model in support of answering that question.
 
@@ -625,15 +636,16 @@ df_county %>%
 
 **Observations**:
 
-- The bar chart makes it clear that Bristol County has the highest
-  arrest rate, with Nantucket and Essex County not far behind. At the
-  other end of the spectrum, Norfolk County—home to Needham, where I
-  live—falls among the lowest. Given what I know about Norfolk’s age
-  profile, socioeconomic status, and racial makeup, I’m curious whether
-  those factors help explain its low arrest rate and how Bristol
-  County’s demographics compare. I’m also interested in seeing the total
-  number of stops in each county, since small sample sizes (especially
-  in places like Nantucket) could exaggerate these differences.
+- Bristol County remains the top county by arrest rate, followed closely
+  by Nantucket and Essex.
+- Norfolk County (Needham) appears at the bottom of the top 10 list
+  (10th place), not as the lowest overall in the state. Many smaller
+  counties outside this top‐10 group actually have lower arrest rates
+  than Norfolk.
+- This nuance suggests that while Norfolk’s arrest rate is relatively
+  low compared to the busiest counties, it isn’t the absolute minimum.
+  It may also reflect sample‐size effects (e.g., Nantucket’s small
+  number of stops can exaggerate its rate).
 
 ## Further Reading
 
@@ -748,125 +760,3 @@ df_az %>%
 ```
 
 ![](c12-policing-assignment_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
-
-``` r
-## TODO: Download the data, move to your data folder, and load it
-filename <- "./data/yg821jf8611_fl_statewide_2020_04_01.rds"
-df_fl <- readRDS(filename)
-
-glimpse (df_fl)
-```
-
-    ## Rows: 7,297,538
-    ## Columns: 34
-    ## $ raw_row_number             <chr> "1|1402189", "2|1402190|7476252", "3|140219…
-    ## $ date                       <date> 2010-01-01, 2010-01-06, 2010-01-08, 2010-0…
-    ## $ time                       <time> 23:11:16, 16:14:43, 19:39:31, 11:56:34, 02…
-    ## $ location                   <chr> NA, "JACKSONVILLE", "JACKSONVILLE", NA, NA,…
-    ## $ county_name                <chr> "Sarasota County", "Duval County", "Duval C…
-    ## $ subject_age                <int> 24, 23, 45, 41, 24, 22, 26, 42, 26, 27, 32,…
-    ## $ subject_race               <fct> NA, white, white, white, black, white, whit…
-    ## $ subject_sex                <fct> female, female, female, male, male, female,…
-    ## $ officer_id_hash            <chr> "e15ccc3f41", "a23eeba673", "f0489ce476", "…
-    ## $ officer_age                <int> NA, 31, 29, 26, NA, NA, 47, 47, 47, NA, 32,…
-    ## $ officer_race               <fct> NA, black, white, white, NA, NA, white, whi…
-    ## $ officer_sex                <fct> NA, male, male, male, NA, NA, male, male, m…
-    ## $ officer_years_of_service   <dbl> NA, 8, 3, 3, NA, NA, 0, 0, 0, NA, 5, 0, NA,…
-    ## $ department_name            <chr> "FLORIDA HIGHWAY PATROL", "FLORIDA HIGHWAY …
-    ## $ unit                       <chr> "F", "G", "G", "L", "C", NA, "Q", "Q", "Q",…
-    ## $ type                       <fct> vehicular, vehicular, vehicular, vehicular,…
-    ## $ violation                  <chr> NA, "SPEED", "DUI|DUI|CARELESS DRIVING", "D…
-    ## $ arrest_made                <lgl> NA, FALSE, TRUE, FALSE, NA, NA, FALSE, FALS…
-    ## $ citation_issued            <lgl> TRUE, FALSE, FALSE, TRUE, TRUE, NA, FALSE, …
-    ## $ warning_issued             <lgl> NA, FALSE, FALSE, FALSE, NA, NA, TRUE, FALS…
-    ## $ outcome                    <fct> citation, NA, arrest, citation, citation, N…
-    ## $ frisk_performed            <lgl> NA, FALSE, FALSE, FALSE, NA, NA, FALSE, FAL…
-    ## $ search_conducted           <lgl> NA, FALSE, FALSE, FALSE, NA, NA, FALSE, TRU…
-    ## $ search_basis               <fct> NA, NA, NA, NA, NA, NA, NA, consent, consen…
-    ## $ reason_for_search          <chr> NA, NA, NA, NA, NA, NA, NA, "DOCUMENT INDIC…
-    ## $ reason_for_stop            <chr> NA, "SPEED", "CARELESS DRIVING", "SPEED", N…
-    ## $ vehicle_registration_state <fct> FL, NC, FL, FL, FL, FL, NY, FL, FL, VA, FL,…
-    ## $ notes                      <chr> "Uniform Traffic Citation", "", "UTC: DUI C…
-    ## $ raw_row_number_old         <chr> "-|-------", "-|-------", "-|-------", "-|-…
-    ## $ raw_Race                   <chr> NA, "W", "W", "W", "B", "W", "W", "H", "H",…
-    ## $ raw_Ethnicity              <chr> NA, NA, NA, NA, NA, NA, "WN", "H", "H", "WN…
-    ## $ raw_row_number_new         <chr> NA, "-------", "-------", "-------", NA, NA…
-    ## $ raw_SearchType             <chr> NA, "NO SEARCH REQUESTED", "NO SEARCH REQUE…
-    ## $ raw_EnforcementAction      <chr> NA, "INFRACTION ARREST", "MISDEMEANOR ARRES…
-
-``` r
-names(df_fl)
-```
-
-    ##  [1] "raw_row_number"             "date"                      
-    ##  [3] "time"                       "location"                  
-    ##  [5] "county_name"                "subject_age"               
-    ##  [7] "subject_race"               "subject_sex"               
-    ##  [9] "officer_id_hash"            "officer_age"               
-    ## [11] "officer_race"               "officer_sex"               
-    ## [13] "officer_years_of_service"   "department_name"           
-    ## [15] "unit"                       "type"                      
-    ## [17] "violation"                  "arrest_made"               
-    ## [19] "citation_issued"            "warning_issued"            
-    ## [21] "outcome"                    "frisk_performed"           
-    ## [23] "search_conducted"           "search_basis"              
-    ## [25] "reason_for_search"          "reason_for_stop"           
-    ## [27] "vehicle_registration_state" "notes"                     
-    ## [29] "raw_row_number_old"         "raw_Race"                  
-    ## [31] "raw_Ethnicity"              "raw_row_number_new"        
-    ## [33] "raw_SearchType"             "raw_EnforcementAction"
-
-``` r
-df_fl
-```
-
-    ## # A tibble: 7,297,538 × 34
-    ##    raw_row_number    date       time     location     county_name    subject_age
-    ##    <chr>             <date>     <time>   <chr>        <chr>                <int>
-    ##  1 1|1402189         2010-01-01 23:11:16 <NA>         Sarasota Coun…          24
-    ##  2 2|1402190|7476252 2010-01-06 16:14:43 JACKSONVILLE Duval County            23
-    ##  3 3|1402191|9513091 2010-01-08 19:39:31 JACKSONVILLE Duval County            45
-    ##  4 4|1402192|9484048 2010-01-11 11:56:34 <NA>         St. Lucie Cou…          41
-    ##  5 5|1402193         2010-01-12 02:00:26 <NA>         Hernando Coun…          24
-    ##  6 6|1402194         2010-01-13 06:14:04 <NA>         Bay County              22
-    ##  7 7|1402195|7886542 2010-01-15 09:18:02 <NA>         Gadsden County          26
-    ##  8 8|1402196|7886543 2010-01-15 10:16:59 <NA>         Gadsden County          42
-    ##  9 9|1402197|7886544 2010-01-15 12:30:12 TALLAHASSEE  Leon County             26
-    ## 10 10|1402198        2010-01-15 13:26:05 <NA>         Leon County             27
-    ## # ℹ 7,297,528 more rows
-    ## # ℹ 28 more variables: subject_race <fct>, subject_sex <fct>,
-    ## #   officer_id_hash <chr>, officer_age <int>, officer_race <fct>,
-    ## #   officer_sex <fct>, officer_years_of_service <dbl>, department_name <chr>,
-    ## #   unit <chr>, type <fct>, violation <chr>, arrest_made <lgl>,
-    ## #   citation_issued <lgl>, warning_issued <lgl>, outcome <fct>,
-    ## #   frisk_performed <lgl>, search_conducted <lgl>, search_basis <fct>, …
-
-``` r
-df_fl %>%
-  group_by(subject_race) %>%
-  summarise(arrest_rate = mean(arrest_made == TRUE, na.rm = TRUE)) %>%
-  ggplot(aes(x = reorder(subject_race, -arrest_rate), y = arrest_rate)) +
-  geom_col(fill = "#e08163") +
-  labs(title = "Arrest Rate by Race (FL)", x = "Race", y = "Proportion Arrested") +
-  theme_minimal()
-```
-
-![](c12-policing-assignment_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
-
-``` r
-df_fl %>%
-  group_by(raw_Race) %>%
-  summarise(arrest_rate = mean(arrest_made == TRUE, na.rm = TRUE)) %>%
-  ggplot(aes(x = reorder(raw_Race, -arrest_rate), y = arrest_rate)) +
-  geom_col(fill = "#e08163") +
-  coord_flip() +
-  labs(title = "Arrest Rate by Race (FL)", x = "Race", y = "Proportion Arrested") +
-  theme_minimal()
-```
-
-    ## Warning: Removed 82 rows containing missing values or values outside the scale range
-    ## (`geom_col()`).
-
-![](c12-policing-assignment_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
-
-d
