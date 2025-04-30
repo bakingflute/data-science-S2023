@@ -438,7 +438,8 @@ compare population with income.
 ``` r
 ## TODO: Join df_q4 and df_pop by the appropriate column
 
-df_data <- merge(df_pop, df_q4)
+df_data <- df_q4 %>%
+  left_join(df_pop, by = "Geography")
 ```
 
 # Analysis
@@ -546,10 +547,19 @@ df_data %>%
 
 - What *overall* trend do you see between `SE` and population? Why might
   this trend exist?
-  - (Your response here)
+  - Counties with more people have much smaller standard errors, and
+    counties with few people have really big standard errors. That’s
+    because when more people answer the survey, your estimate of
+    “typical” income gets more precise. In other words, more responses →
+    less random wiggle in the numbers.
 - What does this *overall* trend tell you about the relative ease of
   studying small vs large counties?
-  - (Your response here)
+  - It’s easier to study income in big counties because their numbers
+    are more reliable (narrow confidence intervals). Small counties give
+    noisy results, so you either need more data or have to be extra
+    careful when interpreting their income estimates.
+
+    o4-mini
 
 # Going Further
 
@@ -562,11 +572,41 @@ States: Pose your own question and try to answer it with the data.
 
 ``` r
 ## TODO: Pose and answer your own question about the data
+df_data %>%
+  filter(!is.na(population_estimate)) %>%
+  group_by(category) %>%
+  summarize(
+    mean_income = mean(income_estimate, na.rm = TRUE),
+    se_income = sd(income_estimate, na.rm = TRUE)/sqrt(n())
+  ) %>%
+  ggplot(aes(x = category, y = mean_income)) +
+  geom_bar(stat = "identity", fill = "red") +
+  geom_errorbar(aes(ymin = mean_income - 1.96*se_income, 
+                    ymax = mean_income + 1.96*se_income),
+                width = 0.2) +
+  labs(title = "Average Income by Family Size Across All Counties",
+       x = "Family Size",
+       y = "Mean Income Estimate") +
+  theme_minimal()
 ```
+
+![](c09-income-assignment_files/figure-gfm/q8-task-1.png)<!-- -->
 
 **Observations**:
 
-- Document your observations here
+- In this chart of mean county median incomes by family size, we see
+  that average income rises as family size increases—from about \$58 000
+  for two-person households up to roughly \$75 000 for five-person
+  families—implying that larger households often have more earners or
+  higher combined earnings. Interestingly, the jump from five- to
+  six-person families is almost negligible, suggesting a plateau: beyond
+  five members, adding another person doesn’t boost the typical
+  household income much more. The very narrow error bars on each bar
+  show that these average values are estimated with high precision
+  across all counties, so the pattern is consistent nationwide. Taken
+  together, this suggests that smaller families (two or three members),
+  which earn noticeably less on average, might benefit most from
+  targeted income‐support programs.
 
 Ideas:
 
