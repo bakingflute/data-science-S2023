@@ -408,34 +408,37 @@ fitting. So `T_norm ~ . - x` would fit on all columns *except* `x`.
 fit_q4 <- df_train %>%
   lm(T_norm ~ L + W + U_0 + N_p + k_f + T_f, data = .)
 
+# Get coefficients and significance
 fit_q4 %>%
   broom::tidy() %>%
-  arrange(desc(estimate))
+  arrange(desc(abs(estimate)))  # Sort by absolute effect size
 ```
 
     ## # A tibble: 7 × 5
     ##   term             estimate   std.error statistic     p.value
     ##   <chr>               <dbl>       <dbl>     <dbl>       <dbl>
-    ## 1 (Intercept)   4.88        0.834           5.86  0.000000126
-    ## 2 L             2.57        2.00            1.28  0.203      
-    ## 3 N_p          -0.000000402 0.000000203    -1.98  0.0515     
-    ## 4 T_f          -0.00478     0.00115        -4.15  0.0000874  
+    ## 1 W           -44.4         8.03           -5.53  0.000000467
+    ## 2 (Intercept)   4.88        0.834           5.86  0.000000126
+    ## 3 L             2.57        2.00            1.28  0.203      
+    ## 4 k_f          -2.28        3.33           -0.685 0.496      
     ## 5 U_0          -0.168       0.185          -0.910 0.366      
-    ## 6 k_f          -2.28        3.33           -0.685 0.496      
-    ## 7 W           -44.4         8.03           -5.53  0.000000467
+    ## 6 T_f          -0.00478     0.00115        -4.15  0.0000874  
+    ## 7 N_p          -0.000000402 0.000000203    -1.98  0.0515
 
 ``` r
+# For context, calculate SDs of key variables
 df_psaap %>%
   summarise(
     sd_x   = sd(x),
-    sd_T_f = sd(T_f)
-  ) 
+    sd_T_f = sd(T_f),
+    sd_W   = sd(W)
+  )
 ```
 
-    ## # A tibble: 1 × 2
-    ##    sd_x sd_T_f
-    ##   <dbl>  <dbl>
-    ## 1 0.281   38.9
+    ## # A tibble: 1 × 3
+    ##    sd_x sd_T_f    sd_W
+    ##   <dbl>  <dbl>   <dbl>
+    ## 1 0.281   38.9 0.00537
 
 **Observations**:
 
@@ -455,8 +458,9 @@ df_psaap %>%
     - Not significant: L, U_0, k_f (all p \> 0.05)
 - What is the regression coefficient for `x`? What about the regression
   coefficient for `T_f`?
-  - X isn’t actually in this model, which seems odd. T_f has a negative
-    relationship.
+  - After standardizing width and T_f are the most dominatn predicitors,
+    with N_p marginall significant. The negative sign for T_f indicates
+    higher inlet temperatures reduce relative heating.
 - What is the standard deviation of `x` in `df_psaap`? What about the
   standard deviation of `T_f`?
   - x: sd = 0.2805 (relatively small variation)
@@ -762,9 +766,16 @@ design_pred
   - observed coverage: 0.933; target: 0.8
 - What interval for `T_norm` would you recommend the design team to plan
   around?
-  - (Your response here)
+  - Based on the prediction intervals at 80% confidence level, I
+    recommend the design team plan for T_norm values between 1.45685 and
+    2.296426 under the specified operating conditions.
+  - Based on the 80% prediction interval from our model, the design team
+    should plan for:  
+    T_norm ∈ \[0.34, 0.80\]
 - Are there any other recommendations you would provide?
-  - N/A
+  - Design for extremes (e.g., handle T_norm up to 0.85 for worst-case
+    scenarios)
+- 
 
 *Bonus*: One way you could take this analysis further is to recommend
 which other variables the design team should tightly control. You could

@@ -22,7 +22,7 @@ Unlike exercises, **challenges will be graded**. The following rubrics define ho
 <!-- ------------------------- -->
 
 | Category | Needs Improvement | Satisfactory |
-|-------------------|-----------------------------|-------------------------|
+|-------------------|----------------------------|-------------------------|
 | Effort | Some task **q**'s left unattempted | All task **q**'s attempted |
 | Observed | Did not document observations, or observations incorrect | Documented correct observations based on analysis |
 | Supported | Some observations not clearly supported by analysis | All observations clearly supported by analysis (table, graph, etc.) |
@@ -203,15 +203,18 @@ Interpret the following model by answering the questions below.
 fit_q4 <- df_train %>%
   lm(T_norm ~ L + W + U_0 + N_p + k_f + T_f, data = .)
 
+# Get coefficients and significance
 fit_q4 %>%
   broom::tidy() %>%
-  arrange(desc(estimate))
+  arrange(desc(abs(estimate)))  # Sort by absolute effect size
 
+# For context, calculate SDs of key variables
 df_psaap %>%
   summarise(
     sd_x   = sd(x),
-    sd_T_f = sd(T_f)
-  ) 
+    sd_T_f = sd(T_f),
+    sd_W   = sd(W)
+  )
 ```
 
 **Observations**:
@@ -226,7 +229,7 @@ df_psaap %>%
 
         -   Not significant: L, U_0, k_f (all p \> 0.05)
 -   What is the regression coefficient for `x`? What about the regression coefficient for `T_f`?
-    -   X isn't actually in this model, which seems odd. T_f has a negative relationship.
+    -   After standardizing width and T_f are the most dominatn predicitors, with N_p marginall significant. The negative sign for T_f indicates higher inlet temperatures reduce relative heating.
 -   What is the standard deviation of `x` in `df_psaap`? What about the standard deviation of `T_f`?
     -   x: sd = 0.2805 (relatively small variation)
     -   T_f: sd = 38.94 (much larger variation)
@@ -424,9 +427,12 @@ design_pred
 -   What fraction of validation cases lie within the intervals you predict? (NB. Make sure to calculate your intervals *based on the validation data*; don't just use one single interval!) How does this compare with `pr_level`?
     -   observed coverage: 0.933; target: 0.8
 -   What interval for `T_norm` would you recommend the design team to plan around?
-    -   (Your response here)
+    -   Based on the prediction intervals at 80% confidence level, I recommend the design team plan for T_norm values between 1.45685 and 2.296426 under the specified operating conditions.
+    -   Based on the 80% prediction interval from our model, the design team should plan for:\
+        T_norm ∈ [0.34, 0.80]
 -   Are there any other recommendations you would provide?
-    -   N/A
+    -   Design for extremes (e.g., handle T_norm up to 0.85 for worst-case scenarios)
+-   
 
 *Bonus*: One way you could take this analysis further is to recommend which other variables the design team should tightly control. You could do this by fixing values in `df_design` and adding them to the model. An exercise you could carry out would be to systematically test the variables to see which ones the design team should more tightly control.
 
