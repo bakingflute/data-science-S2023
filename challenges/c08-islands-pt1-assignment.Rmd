@@ -1,6 +1,6 @@
 ---
 title: "The Islands, Part 1: Design"
-author: "Esther Aduamah"
+author: "Esther A"
 date: 2025-04-03
 output:
   github_document:
@@ -98,7 +98,7 @@ Make sure to include in `df_q3` the counts as a column named `n`, and the preval
 
 *Hint*: You will have to use what you've learned about string handling to extract the *last names* only!
 
-```{r q3-task}
+```{r}
 library(dplyr)
 
 ## TASK: Compute the prevalence and sort
@@ -143,7 +143,7 @@ print("Very good!")
 -   What last name is most prevalent in `df_sample_seq`?
     -   Sorensen is the most prevalent in the df_sample_seq with eight occurrences.
 -   Is this sample representative of *all* houses in Helvig? Why or why not?
-    -   (Your response here)
+    -   No, this is merely a selection of Helvig's first twenty-five homes. The predominance of a last name may be distorted by a large household in the first 25 homes.
 
 In the exercises, we talked about the importance of random sampling. In the previous challenge, we were able to *simulate* a random sample by running a few lines of code. But in the real world, we have to work harder to gather a random sample. We'll do this in two stages: *plan* then *collect*.
 
@@ -206,7 +206,7 @@ df_sample_random <-
 
 Use the following to check your work.
 
-```{r q3-tests}
+```{r q5-tests}
 ## NOTE: No need to change this
 # Check that the dataset has the correct column names
 assertthat::assert_that(setequal(
@@ -224,7 +224,7 @@ numVsamp <-
   pull(house)
 assertthat::assert_that(
   length(numVsamp) == 0,
-  msg = str_c("You are missing the houses: ", numVsamp)
+  msg = str_c("You are missing the houses: ", str_c(numVsamp, collapse = ", "))
 )
 
 sampVnum <- 
@@ -236,7 +236,7 @@ sampVnum <-
   pull(house)
 assertthat::assert_that(
   length(sampVnum) == 0,
-  msg = str_c("You have extra houses: ", sampVnum)
+  msg = str_c("You have extra houses: ", str_c(sampVnum, collapse = ", "))
 )
 
 print("Great work!")
@@ -245,8 +245,8 @@ print("Great work!")
 *Observations*
 
 -   Which sample---sequential or random---is more *representative* of all homes Helvig? Why?
-    -   (Sequential or random?)
-    -   (Write your 'why' here.)
+    -   Random
+    -   The sequential sample only looks at the first 25 houses, which may cluster families together (since relatives tend to live near each other). The random sample spreads observations across the entire town, better representing the true name distribution.
 
 ### **q6** Find common names: Random sample
 
@@ -264,9 +264,9 @@ df_sample_random %>%
 *Observations*
 
 -   Did you find any highly prevalent names using `df_sample_random` that you *didn't* find in q3 (using `df_sample_seq`)? Write them here.
-    -   (Your response here)
+    -   Collins and Morris appear a bunch of times. Names like Kono, Ludwig, Nowak, Pillai, Ramanujan, Svendsen, and Wilson appeared in the random sample but weren't in the sequential sample's top names - The sequential sample was dominated by Sorensen (8 occurrences), while the random sample shows more diversity.
 -   Is there any reason that people with the same last name might tend to *live near each other*?
-    -   (Your response here)
+    -   Maybe people from the same country or region fo the world would live by each other. They could not just be from the same country, but relatives as family often lives next to each other.
 
 You should have found some difference between the sequential and random samples. This is because we're only working with a *sample*---a limited number of observations from the entire population. We could go to every single house in Helvig and determine *exactly* how many people of each name there are (that's called a *census*), but the point of statistical inference is that we can make statements about a population using only a sample. What makes statistical inference powerful is that we can determine *how confident* we should be in our results, based on the size of our sample.
 
@@ -283,8 +283,12 @@ Complete the code below to write a helper function. Your function will compute t
 #  in an `estimate` column).
 name_prevalence <- function(df, last = "Collins") {
   df %>% 
-    ## TODO: Finish this code
-    mutate(term = "prevalence")
+    filter(!is.na(name)) %>%               # Remove empty rows
+    mutate(last_name = word(name, -1)) %>% # Extract last word as surname
+    summarise(
+      term = "prevalence",                 # Label for the output
+      estimate = mean(last_name == last)    # Calculate proportion
+    )
 }
 ```
 
@@ -344,6 +348,7 @@ df_interval_bootstrap <-
     estimate = map(
       splits,
       function(split_df) {
+         name_prevalence(analysis(split_df), last = "Collins")
 ## TODO: Finish this code, using the name_prevalence() helper you implemented
 ## HINT: Remember that you need to use analysis() when operating on split_df
       }
@@ -359,10 +364,11 @@ df_interval_bootstrap
 **Observations**:
 
 -   What is highest possible prevalence for your chosen name, based on the confidence interval you constructed?
-    -   (Your response here)
+    -   21.57%
+    -   This means we can be 95% confident the true population prevalence is less than or equal to 21.57%
 -   Note that we used the *random* sample with the bootstrap procedure in this task. Could we use the bootstrap to make a confidence interval using the sequential sample (`df_sample_seq`) that would be representative of all of Helvig? Why or why not?
-    -   (Yes or no.)
-    -   (Write your 'why' here.)
+    -   No
+    -   The sequential sample's results would be unreliable because: 1. **Geographic clustering**: Families live near each other, artificially inflating name concentrations 2. **Underestimated variability**: Wouldn't account for neighborhood differences 3. **Bias**: First 25 houses might be in a single "family district"
 
 ### **q9** Discover possible measurements
 
@@ -370,9 +376,9 @@ Click on a single islander (you can do this from one of the houses), and take a 
 
 *Hint*: The videos from the [Visitor Center](https://islands.smp.uq.edu.au/visitors.php) will be especially helpful for getting some ideas.
 
--   (Possible measurement #1)
--   (Possible measurement #2)
--   (Possible measurement #3)
+-   Ruler drop test reaction time (cm)
+-   Blood alcohol content (BAC)
+-   Balance test duration (seconds)
 
 ### **q10** Planning a study (TEAMWORK)
 
@@ -382,34 +388,41 @@ Challenge 10 will be a team assignment where you plan and execute a statistical 
 
 -   (What population are you going to study?)
     -   All of the Islanders? Only the residents of Helvig? Participants meeting certain criteria (in which case, you need to list *covariates*)?
+    -   We will be studying the Akkeshi Population in The Islands. We used random sampling to get a random sampling of 30 houses, with the participants being over 18 years old.
 
 #### Quantity of interest
 
 -   (Write your quantity of interest here)
+-   Our quantity of interest is the change reaction time measured by the length in centimeters caught after the ruler is dropped
 
 #### Covariates
 
 -   (Write any relevant covariates here)
 -   (There's probably more than one!)
+    -   Weight, height, age, amount of alcohol consumed, reaction time before consumption, reaction time after consumption 
 
 #### Observation or experiment?
 
 The Islands allows you to ask islanders to complete tasks. If you just take measurements on your participants, then it's an *observational study*. But if you also introduce something that's meant to change the outcome of a measurement (e.g., drinking coffee before taking a test), that's called an *experimental study*. You need to decide whether your study is observational or experimental.
 
 -   (Observation or experiment?)
+    -   Experiment because we are introducing alcohol to the residents of Akkeshi and recording the changes in reaction times.
 
 #### Question / Hypothesis
 
 -   (Write your question / hypothesis here)
     -   This could be an observational question, like "How are X and Y related in the population?"
     -   This could be an experimental question, like "What effect does X have on Y in the population?"
+    -   How do the height and weight of an individual affect their reaction time when drinking 4 shots of alcohol? We changed it from our original question to include height and weight.
 
 #### Sampling plan
 
 -   (What steps will you take to collect the data?)
-    -   Be specific. For instance, if you're going to collect a random sample, how will you enumerate all of the things to be sampled?
-    -   Write a protocol. Document step-by-step instructions that your team will follow. That way, you can feasibly split up data collection among the whole team, while making sure each team member doesn't make ad hoc decisions that introduce bias into your results.
+    -   First, we all met together at the same time to create/open our The Islands logins together. As a team, we decided to focus on Akkeshi. We did a random sampling with set.seed to figure out which houses we were going to be checking. We put all of these numbers in a spreadsheet. We split up the households so every member of the team would have five houses to cover; this was so we did our test relative in the same time period in Akkeshi. We recorded every member of the household’s height, weight, and name as long as they were 18 and consented. If they did not consent we entered them as “NA” on our data sheet. We all recorded the Blood Alcohol Content (B.A.C.) and reaction time (by doing the Ruler Test) before and after alcohol consumption for every single person. We gave everyone four tequila shots back to back and waited five real-world minutes before checking their blood alcohol content. This is so the alcohol could sit for a bit and get into their systems. We then re-recorded their reaction time and went on to the next person in the household, or new house if no one else fit the requirements for our study.
 -   (How will you ensure the data is representative of your chosen population?)
+    -   As we did a random sampling, the data is representative as we have thirty houses from nine to 447 all on Akkeshi Island.
 -   (For experiments only: How will you ensure any effects you observe are due to the treatment, and not due to other factors?)
+    -   We all did our experiments at the same time and waited the same amount of time (5 minutes), making sure that time did not affect us. We also collected all of our data together
 -   (How will you choose your sample size?)
     -   This should be a mix of how confident you want to be in your results, and what is actually *feasible* for your research team.
+        -   30 houses because it was manageable for us to collect the data and we considered that in some houses there is more than one person and not every person will give us their consent to participate in our experiment.
