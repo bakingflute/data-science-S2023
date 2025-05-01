@@ -152,59 +152,14 @@ value for `names_to`.
 ## TASK: Tidy `df_stang`
 
 df_stang_long <- df_stang %>%
-  rename(E_0 = E_00, nu_0 = nu_00) %>%  
   pivot_longer(
-    cols = c(E_0, E_45, E_90, nu_0, nu_45, nu_90),  
-    names_to = c(".value", "angle"),  
-    names_sep = "_"
+    cols = -c(thick, alloy),  # Pivot all except these columns
+    names_to = c(".value", "angle"),  # Special .value token
+    names_sep = "_"  # Split names at underscore
   ) %>%
-  mutate(
-    angle = as.integer(angle),  
-    E = ifelse(E < 0, NA, E),  
-    nu = ifelse(nu < 0, NA, nu)  
-  ) %>%
-  filter(!is.na(E) & !is.na(nu) & E > 0 & nu > 0)  
-
-while (nrow(df_stang_long) < 26) {
-  df_stang_long <- bind_rows(df_stang_long, df_stang_long)  # Duplicate existing rows
-}
-df_stang_long <- df_stang_long[1:26, ]  # Trim extra rows if needed
-
-print(dim(df_stang_long))  
+  mutate(angle = as.integer(angle)) %>%  # Convert angle to integer
+  filter(E > 0 & nu > 0)  # Remove invalid values
 ```
-
-    ## [1] 26  5
-
-``` r
-print(names(df_stang_long))  
-```
-
-    ## [1] "thick" "alloy" "angle" "E"     "nu"
-
-``` r
-print(unique(df_stang_long$angle))  
-```
-
-    ## [1]  0 45 90
-
-``` r
-df_stang_long
-```
-
-    ## # A tibble: 26 × 5
-    ##    thick alloy   angle     E    nu
-    ##    <dbl> <chr>   <int> <dbl> <dbl>
-    ##  1 0.022 al_24st     0 10600 0.321
-    ##  2 0.022 al_24st    45 10700 0.329
-    ##  3 0.022 al_24st    90 10500 0.31 
-    ##  4 0.022 al_24st     0 10600 0.323
-    ##  5 0.022 al_24st    45 10500 0.331
-    ##  6 0.022 al_24st    90 10700 0.323
-    ##  7 0.032 al_24st     0 10400 0.329
-    ##  8 0.032 al_24st    45 10400 0.318
-    ##  9 0.032 al_24st    90 10300 0.322
-    ## 10 0.032 al_24st     0 10300 0.319
-    ## # ℹ 16 more rows
 
 Use the following tests to check your work.
 
