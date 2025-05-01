@@ -141,7 +141,6 @@ df_michelson %>% glimpse()
 ``` r
 ## TODO: Compute summaries
 library(dplyr)
-df_q1 <- NA
 
 df_q1 <- df_michelson %>%
   group_by(Distinctness) %>%
@@ -186,8 +185,6 @@ in the dataset.
 
 ``` r
 ## TODO: Adjust the data, assign to df_q2
-df_q2 <- NA
-
 df_q2 <- df_michelson %>%
   mutate(VelocityVacuum = Velocity + 92) 
 
@@ -246,22 +243,47 @@ michelson_error
     ## [1] -151.542
 
 ``` r
-michelson_uncertainty
+# Quantitative comparison
+error_ratio <- abs(michelson_error) / michelson_uncertainty
+error_difference <- abs(michelson_error) - michelson_uncertainty
+
+list(
+  michelson_error = michelson_error,
+  michelson_uncertainty = michelson_uncertainty,
+  error_ratio = error_ratio,
+  error_difference = error_difference
+)
 ```
 
+    ## $michelson_error
+    ## [1] -151.542
+    ## 
+    ## $michelson_uncertainty
     ## [1] 51
+    ## 
+    ## $error_ratio
+    ## [1] 2.971412
+    ## 
+    ## $error_difference
+    ## [1] 100.542
 
-**Observations**: - Is Michelson’s estimate of the error (his
-uncertainty) greater or less than the true error? - This indicates that
-Michelson underestimated the uncertainty or potential error in his
-experiment. His estimated uncertainty was smaller than the actual
-difference between his measured speed of light and the true value. -
+**Observations**: -
+
+Is Michelson’s estimate of the error (his uncertainty) greater or less
+than the true error? -
+
+This indicates that Michelson underestimated the uncertainty or
+potential error in his experiment. His estimated uncertainty was smaller
+than the actual difference between his measured speed of light and the
+true value. -  
 Make a quantitative comparison between Michelson’s uncertainty and his
-error. - Michelson’s true error (the actual deviation of his measurement
-from the true speed of light) is larger than his uncertainty (the range
-he believed the true value might lie in). Michelson’s True Error:
--151.542 km/s and Michelson’s Uncertainty: 51 km/s as per the formula:
-True Error = Lightspeed_Vacuum - Lightspeed_Michelson
+error. -
+
+Michelson’s true error (the actual deviation of his measurement from the
+true speed of light) is larger than his uncertainty (the range he
+believed the true value might lie in). Michelson’s True Error: -151.542
+km/s and Michelson’s Uncertainty: 51 km/s as per the formula: True Error
+= Lightspeed_Vacuum - Lightspeed_Michelson.
 
 The following plot shows all of Michelson’s data as a [control
 chart](https://en.wikipedia.org/wiki/Control_chart); this sort of plot
@@ -338,59 +360,105 @@ df_q2 %>%
 
 ![](c02-michelson-assignment_files/figure-gfm/q4-cf-real-simulated-1.png)<!-- -->
 
-**Observations**: Similarities - (your responses here) Differences -
-(your responses here)
+**Observations**:
+
+Similarities:
+
+- Both data sets show similar overall ranges of velocity values
+
+- the daily means (gray lines) follow similar patterns of variation in
+  both data sets
+
+- Both show points scattered around their respective means
+
+Differences
+
+- The real data shows more consistent daily patterns- measurements from
+  the same day tend to cluster together
+
+- The simulated data appears more randomly scattered without the daily
+  grouping patterns
 
 ### **q5** You have access to a few other variables. Construct a **at least three** visualizations of `VelocityVacuum` against these other factors. Are there other patterns in the data that might help explain the difference between Michelson’s estimate and `LIGHTSPEED_VACUUM`?
 
 ``` r
-library(tidyverse)
-
-df_q2 %>%
-  ggplot(aes(x = Temp, y = VelocityVacuum)) +  
-  geom_point() +  
+# Visualization 1: Velocity vs Temperature
+ggplot(df_q2, aes(Temp, VelocityVacuum, color = Distinctness)) +
+  geom_point(alpha = 0.5, size = 4) +
+  geom_smooth(method = "lm", se = FALSE, aes(group = Distinctness)) +
+  scale_color_manual(values = c("1" = "red", "2" = "green", "3" = "blue")) +
   labs(
-    x = "Temperature (Fahrenheit)",  
-    y = "Velocity in Vacuum (km/s)",  
-    title = "Velocity in Vacuum vs Temperature"  
+    title = "Speed of Light vs. Temperature by Measurement Distinctness",
+    x = "Temperature (°F)",
+    y = "Velocity in Vacuum (km/s)",
+    color = "Distinctness"
   ) +
-  theme_minimal()  
+  theme_minimal()
 ```
+
+    ## `geom_smooth()` using formula = 'y ~ x'
 
 ![](c02-michelson-assignment_files/figure-gfm/unnamed-chunk-2-1.png)<!-- -->
 
 ``` r
-df_q2 %>%
-  ggplot(aes(x = Distinctness, y = VelocityVacuum)) +  
-  geom_boxplot() +  
-  labs(
-    x = "Distinctness",  
-    y = "Velocity in Vacuum (km/s)",  
-    title = "Velocity in Vacuum vs Distinctness"  
-  ) +
-  theme_minimal()  
+# Visualization 2: Velocity vs Distinctness (boxplot)
+ggplot(df_q2, aes(Distinctness, VelocityVacuum)) +
+  geom_boxplot() +
+  labs(title = "Speed of Light by Measurement Distinctness")
 ```
 
 ![](c02-michelson-assignment_files/figure-gfm/unnamed-chunk-2-2.png)<!-- -->
 
 ``` r
-df_q2 %>%
-  ggplot(aes(x = Date, y = VelocityVacuum)) +  
-  geom_line() +  
-  geom_point() +  
-  labs(
-    x = "Date of Measurement",  
-    y = "Velocity in Vacuum (km/s)",  
-    title = "Velocity in Vacuum Over Time"  
-  ) +
-  theme_minimal()  
+# Visualization 3: Velocity over Time
+ggplot(df_q2, aes(Date, VelocityVacuum)) +
+  geom_point() +
+  geom_smooth() +
+  labs(title = "Speed of Light Measurements Over Time")
 ```
+
+    ## `geom_smooth()` using method = 'loess' and formula = 'y ~ x'
 
 ![](c02-michelson-assignment_files/figure-gfm/unnamed-chunk-2-3.png)<!-- -->
 
 **Observations**:
 
-- Make sure to record observations on your graphs!
+- **Visualization 1: Speed of Light vs. Temperature by Measurement
+  Distinctness**
+  - The three straight lines all tilt upward, which means Michelson’s
+    measured speed went up a little on warmer days. The red line (poor
+    images) rises the fastest and has the most spread, so bad image
+    quality shows the strongest temperature effect and the noisiest
+    data. The blue line (good images) is almost flat and the points
+    cluster tightly, meaning when the images were clear his measurements
+    were more consistent and barely changed with temperature.
+
+<!-- -->
+
+- **Visualization 2: Speed of Light by Measurement Distinctness**
+
+<!-- -->
+
+    -   As image quality improves from 1 to 3, the middle of each box
+        (the median) shifts higher: poor images sit lowest, fair are in
+        the middle, and good images are highest. The “good” box is also
+        taller, showing more variation in those best trials. Each group
+        has a few dots outside the whiskers—those are outliers, like one
+        very low poor‐quality reading near 299,700 km/s or a couple of
+        high good‐quality readings above 300,100 km/s.
+
+<!-- -->
+
+- **Visualization 3: Speed of Light Measurements Over Time**
+
+<!-- -->
+
+    -   The smooth blue line starts just above 299,945 km/s in early
+        June, dips down to near 299,920 km/s around mid‐month, then
+        creeps back up toward 299,930 km/s by month’s end. You can also
+        see points spread out more in the middle of the month,
+        suggesting the experiment was a bit less stable then—maybe due
+        to changing conditions or equipment drift.
 
 ## Bibliography
 
