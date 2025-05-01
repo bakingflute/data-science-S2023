@@ -105,18 +105,6 @@ you’ll be responsible for doing another cycle of EDA on your own!
 
 ``` r
 ## TASK: Do your "first checks" here!
-str(gapminder)
-```
-
-    ## tibble [1,704 × 6] (S3: tbl_df/tbl/data.frame)
-    ##  $ country  : Factor w/ 142 levels "Afghanistan",..: 1 1 1 1 1 1 1 1 1 1 ...
-    ##  $ continent: Factor w/ 5 levels "Africa","Americas",..: 3 3 3 3 3 3 3 3 3 3 ...
-    ##  $ year     : int [1:1704] 1952 1957 1962 1967 1972 1977 1982 1987 1992 1997 ...
-    ##  $ lifeExp  : num [1:1704] 28.8 30.3 32 34 36.1 ...
-    ##  $ pop      : int [1:1704] 8425333 9240934 10267083 11537966 13079460 14880372 12881816 13867957 16317921 22227415 ...
-    ##  $ gdpPercap: num [1:1704] 779 821 853 836 740 ...
-
-``` r
 glimpse(gapminder)
 ```
 
@@ -163,6 +151,7 @@ summary(gapminder)
 ``` r
 ## TASK: Find the largest and smallest values of `year` in `gapminder`
 year_max <- gapminder %>% summarize(max_year = max(year)) %>% pull(max_year)
+
 year_min <- gapminder %>% summarize(min_year = min(year)) %>% pull(min_year)
 ```
 
@@ -215,10 +204,14 @@ can.
 gapminder %>%
   filter(year == year_min) %>%
   ggplot(aes(x = continent, y = gdpPercap, color = continent)) +
-  geom_jitter(width = 0.2, alpha = 0.7) +
+  geom_jitter(width = 0.2, height = 0, alpha = 0.7) +
   scale_y_log10() +
   theme_minimal() +
-  labs(title = "GDP per Capita by Continent", x = "Continent", y = "GDP per Capita (log scale)")
+  labs(
+    title = "GDP per Capita by Continent (1952)",
+    x     = "Continent",
+    y     = "GDP per Capita (log scale)"
+  )
 ```
 
 ![](c04-gapminder-assignment_files/figure-gfm/q2-task-1.png)<!-- -->
@@ -228,6 +221,9 @@ gapminder %>%
 - GDP per capita varies significantly across continents. Also, the
   scatter plot provides a clearer view of the spread of GDP per capita
   values within each continent.
+- There is a wide spread of africa and the americas that span several
+  orders of magnitude. Oceania and Asia also cluster low excpet for a
+  few high points.
 
 **Difficulties & Approaches**:
 
@@ -240,27 +236,44 @@ gapminder %>%
 
 ``` r
 ## TASK: Identify the outliers from q2
-outliers <- gapminder %>%
-  filter(year == year_min) %>%
-  arrange(desc(gdpPercap)) %>%
-  head(5) %>%
-  select(country, gdpPercap)
-outliers
+gm_min <- gapminder %>% filter(year == year_min)
+q1 <- quantile(gm_min$gdpPercap, 0.25)
+q3 <- quantile(gm_min$gdpPercap, 0.75)
+iqr <- q3 - q1
+lower_bound <- q1 - 1.5 * iqr
+upper_bound <- q3 + 1.5 * iqr
+
+outliers <- gm_min %>%
+  filter(gdpPercap > upper_bound) %>%  # Only high outliers per q2's plot
+  select(country, continent, gdpPercap) %>%
+  arrange(desc(gdpPercap))
+
+print(outliers)
 ```
 
-    ## # A tibble: 5 × 2
-    ##   country       gdpPercap
-    ##   <fct>             <dbl>
-    ## 1 Kuwait          108382.
-    ## 2 Switzerland      14734.
-    ## 3 United States    13990.
-    ## 4 Canada           11367.
-    ## 5 New Zealand      10557.
+    ## # A tibble: 12 × 3
+    ##    country        continent gdpPercap
+    ##    <fct>          <fct>         <dbl>
+    ##  1 Kuwait         Asia        108382.
+    ##  2 Switzerland    Europe       14734.
+    ##  3 United States  Americas     13990.
+    ##  4 Canada         Americas     11367.
+    ##  5 New Zealand    Oceania      10557.
+    ##  6 Norway         Europe       10095.
+    ##  7 Australia      Oceania      10040.
+    ##  8 United Kingdom Europe        9980.
+    ##  9 Bahrain        Asia          9867.
+    ## 10 Denmark        Europe        9692.
+    ## 11 Netherlands    Europe        8942.
+    ## 12 Sweden         Europe        8528.
 
 **Observations**:
 
 - Identify the outlier countries from q2
-  - Kuwait is the outlierr.
+  - Kuwait
+  - USA
+  - Switzerland
+  - New Zealand
 
 *Hint*: For the next task, it’s helpful to know a ggplot trick we’ll
 learn in an upcoming exercise: You can use the `data` argument inside
@@ -293,22 +306,40 @@ variables; think about using different aesthetics or facets.
 ## TASK: Create a visual of gdpPercap vs continent
 gapminder %>%
   filter(year %in% c(year_min, year_max)) %>%
-  ggplot(aes(x = continent, y = gdpPercap, color = continent)) +
-  geom_jitter(width = 0.2, alpha = 0.7) +
-  scale_y_log10() +
+  ggplot(aes(continent, gdpPercap)) +
+  geom_jitter(aes(color = continent), alpha = 0.5, width = 0.2) +
+  geom_text(
+    data = . %>% filter(country %in% outliers$country),  # Use pre-defined outliers
+    aes(label = country), 
+    size = 3, 
+    hjust = -0.1,
+    vjust = 0.5
+  ) +
   facet_wrap(~year) +
-  theme_minimal() +
-  labs(title = "GDP per Capita by Continent Over Time", x = "Continent", y = "GDP per Capita (log scale)")
+  scale_y_log10() +
+  labs(
+    title = "GDP per Capita by Continent (1952 vs. 2007)",
+    subtitle = "Outliers labeled by country",
+    x = "Continent",
+    y = "GDP per Capita (log scale)"
+  ) +
+  theme_minimal()
 ```
 
 ![](c04-gapminder-assignment_files/figure-gfm/q4-task-1.png)<!-- -->
 
 **Observations**:
 
-- The GDP per capita distribution has evolved over time, with some
-  continents showing significant growth. -The highlighted points reveal
-  that certain high-GDP nations remained outliers in both `year_min` and
-  `year_max`.
+- **Growth Patterns:**
+  - **Asia** saw dramatic growth (e.g., Kuwait’s GDP dropped post-1952,
+    but Japan/Singapore emerged as high-GDP nations).
+
+  - **Africa** remained low-GDP, with no outliers in 2007.
+
+  - **Europe** and **Oceania** maintained high GDP, though outliers
+    shifted (e.g., Norway surpassed Switzerland).
+- **Outliers:** In 2007, new high-GDP countries appeared (e.g., Ireland,
+  Qatar), while some 1952 outliers (e.g., Kuwait) fell behind.
 
 # Your Own EDA
 
@@ -324,11 +355,17 @@ the relationship between variables, or something else entirely.
 ``` r
 ## TASK: Your first graph
 gapminder %>%
-  ggplot(aes(x = year, y = gdpPercap, group = continent, color = continent)) +
+  group_by(continent, year) %>%
+  summarize(mean_gdp = mean(gdpPercap), .groups = "drop") %>%
+  ggplot(aes(year, mean_gdp, color = continent)) +
   geom_line(size = 1) +
   scale_y_log10() +
-  theme_minimal() +
-  labs(title = "GDP per Capita Change by Continent", x = "Year", y = "GDP per Capita (log scale)")
+  labs(
+    title = "Mean GDP per Capita by Continent (1952–2007)",
+    x = "Year",
+    y = "Mean GDP per Capita (log scale)"
+  ) +
+  theme_minimal()
 ```
 
     ## Warning: Using `size` aesthetic for lines was deprecated in ggplot2 3.4.0.
@@ -339,11 +376,10 @@ gapminder %>%
 
 ![](c04-gapminder-assignment_files/figure-gfm/q5-task1-1.png)<!-- -->
 
-- The GDP per capita change by continent shows overall growth, with
-  Europe and the Americas leading, Asia rising rapidly, and Africa
-  lagging but improving. The log scale highlights differences, though
-  continent-level grouping hides internal disparities. A country-level
-  breakdown or event annotations could add deeper insight.
+- **Asia** and **Europe** show steep growth post-1980, likely due to
+  industrialization (Asia) and post-war recovery (Europe).
+- **Africa**’s growth is flat, suggesting systemic barriers.
+- **Americas** and **Oceania** grew steadily but were outpaced by Asia.
 
 ``` r
 ## TASK: Your second graph
@@ -377,10 +413,12 @@ gapminder %>%
 
 ![](c04-gapminder-assignment_files/figure-gfm/q5-task3-1.png)<!-- -->
 
-- The Life Expectancy vs. Population Size plot shows no strong
-  correlation, suggesting that a country’s population size doesn’t
-  directly impact life expectancy. However, smaller countries tend to
-  have more variation, while larger nations cluster around global
-  averages. The log scale helps visualize differences among smaller
-  populations, but regional and economic factors likely play a bigger
-  role in life expectancy.
+- **No Correlation:** Population size alone doesn’t predict life
+  expectancy. For example:
+  - Small populations (e.g., Iceland, Caribbean nations) achieve high
+    life expectancy.
+
+  - Large populations (e.g., India, China) show mid-range life
+    expectancy, influenced by GDP/healthcare access.
+- **Confounding Factors:** GDP (from Plot 2) and healthcare systems
+  likely play larger roles than population size.
