@@ -99,7 +99,8 @@ document your observations.
 ## TASK: Plot `price` vs `carat` below
 ## Your code here!
 
-ggplot(diamonds) +
+diamonds %>%
+  ggplot() +
   geom_point(aes(x = carat, y = price))
 ```
 
@@ -117,7 +118,8 @@ ggplot(diamonds) +
 ## TASK: Plot `price`, `carat`, and `cut` below
 ## Your code here!
 
-ggplot(diamonds) +
+diamonds %>%
+  ggplot() +
   geom_point(aes(x = carat, y = price, color = cut))
 ```
 
@@ -126,9 +128,12 @@ ggplot(diamonds) +
 **Observations**:
 
 - (Write your observations here!)
-  - It looks like the state of Indiana. It has the same structure of
-    before, but the colors help to break it apart and explain the
-    variation in price.
+  - The plot reveals that higher-quality cuts (e.g., Ideal) tend to have
+    smaller carat sizes but higher prices per carat compared to
+    lower-quality cuts (e.g., Fair). This suggests cut quality
+    significantly impacts price beyond just carat weight. There is also
+    noticeable overlap between cut categories in the mid-range carat
+    values.
 
 # Communication
 
